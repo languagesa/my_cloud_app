@@ -1,0 +1,19 @@
+#statusContainer{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    margin-top:20px;
+}
+
+#statusDot{
+    width:15px;
+    height:15px;
+
+    border-radius:50%;
+
+    background:red;
+}
+
+#statusText{
+    font-size:18px;
+}
