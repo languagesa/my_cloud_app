@@ -13,11 +13,8 @@ yarn-error.log*
 # Environment variables
 .env
 
-# macOS
-.DS_Store
-
 # Windows
 Thumbs.db
 
-# VSCode settings (optional)
+# VSCode settings
 .vscode/
