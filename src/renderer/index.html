@@ -1,26 +1,25 @@
 <!DOCTYPE html>
-
 <html>
-
 <body>
+    <h1>Server Dashboard</h1>
 
-<h1>
-Server Dashboard
-</h1>
+    <button id="connect">Connect To Server</button>
 
+    <div id="statusContainer">
+        <div id="statusDot"></div>
+        <span id="statusText">Disconnected</span>
+    </div>
 
-<button id="connect">
-Connect To Server
-</button>
-<div id="statusContainer">
-    <div id="statusDot"></div>
-    <span id="statusText">Disconnected</span>
-</div>
+    <hr>
 
+    <button id="fileExplorerButton" disabled>Open File Explorer</button>
+    <button id="goBack" disabled>Back</button>
 
+    <p id="currentPath">Connect to view files.</p>
+    <p id="explorerMessage"></p>
 
-<script src="app.js"></script>
+    <ul id="fileList"></ul>
 
+    <script src="app.js"></script>
 </body>
-
 </html>

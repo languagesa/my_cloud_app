@@ -1,17 +1,19 @@
 const { contextBridge, ipcRenderer } = require("electron");
 
+console.log("Preload script loaded");
 
-contextBridge.exposeInMainWorld( "server", {
+contextBridge.exposeInMainWorld("server", {
+    connect: () => ipcRenderer.invoke("connect-server"),
 
-        connect: ()=> ipcRenderer.send("connect-server"),
-        
-        onStatus: (callback) => {
-        
-            ipcRenderer.on("connection-status", (event, connected) => {
+    listDirectory: (remotePath) => {
+        return ipcRenderer.invoke("list-directory", remotePath);
+    },
 
-                callback(connected);
-
+    onStatus: (callback) => {
+        console.log("onStatus listener registered");
+        ipcRenderer.on("connection-status", (_event, connected) => {
+            console.log("Preload received status:", connected);
+            callback(connected);
         });
-
     }
 });
