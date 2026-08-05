@@ -23,18 +23,21 @@ function sendConnectionStatus(connected) {
         mainWindow.webContents.send("connection-status", connected);
     }
 }
-
-function connectSftp( ){
+// this function will try to eastablish connection to the server while also 
+//giving the homePath for later file fetching while making sure there is 
+//only one active ssh session to transfer files over
+function connectSftp() {
 
     if(sftp)
         return Promise.resolve({
         connected: true,
         homePath: homePath
-
         });
-     if (connectionPromise) {
+
+    if (connectionPromise) {
         return connectionPromise;
     }
+    
     newClient.on("ready", () => {
         console.log("ssh is ready to connect")
         newClient.sftp((error,newSftp) => {
@@ -42,10 +45,44 @@ function connectSftp( ){
                 reject(error);
                 return;
         }
-        sftp = newSftp;
-    }
+// "." is the current working directory on the remote server        
+// error and absHomePath are the callback paramater
+// the sftp documentation https://github.com/mscdex/ssh2/blob/master/SFTP.md#client-only-methods
+//this part will eastablish the sftp
+            sftp = newSftp;
+            sftp.realpath(".", (error, absHomePath) => {
+                if(error){
+                    reject(error);
+                    return;
+                }
+                    homePath = absHomePath;
+                    sendConnectionStatus(true);
+                    resolve({   
+                        connected: true,
+                        homePath: homePath
+                    });
+            });
+        });
+                newClient.on("error", (error) => {
+            console.error("SSH error:", error.message);
+            reject(error);
+        });
 
+        newClient.on("close", () => {
+            console.log("SSH connection closed.");
+
+            sshClient = null;
+            sftp = null;
+            homePath = null;
+            connectionPromise = null;
+
+            sendConnectionStatus(false);
+        });
+        client.connect(ServAdr);
+    });        
+    return connectionPromise;
 }
+
 ipcMain.on("connect-server", (event) => {
     if (sshProcess) return;
     
