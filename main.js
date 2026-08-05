@@ -120,16 +120,6 @@ ipcMain.handle("list-directory", async (_event, remotePath) => {
     });
 })
 
-
-
-
-
-
-
-
-
-
-
 ipcMain.on("connect-server", (event) => {
     if (sshProcess) return;
     
@@ -163,22 +153,34 @@ ipcMain.on("connect-server", (event) => {
 
 
 
-function createWindow(){
-
-    const window = new BrowserWindow({
+function createWindow() {
+    mainWindow = new BrowserWindow({
         width: 900,
         height: 600,
 
-        webPreferences:{
-            preload: __dirname + "/preload.js"
+        webPreferences: {
+            preload: path.join(__dirname, "preload.js"),
+            contextIsolation: true
         }
     });
 
+    mainWindow.loadFile("src/renderer/index.html");
 
-    window.loadFile("src/renderer/index.html");
+    mainWindow.on("closed", () => {
+        mainWindow = null;
+    });
 }
 
+app.whenReady().then(createWindow);
 
+app.on("before-quit", () => {
+    if (sshClient) {
+        sshClient.end();
+    }
+});
+
+
+window.loadFile("src/renderer/index.html");
 app.whenReady().then(()=>{
     createWindow();
 });
