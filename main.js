@@ -19,10 +19,9 @@ const ServAdr = {
     keepAliveMsgIntrvl: 10000
 };
 function sendConnectionStatus(connected) {
-    if (mainWindow) {
+    if (mainWindow) 
         mainWindow.webContents.send("connection-status", connected);
     }
-}
 // this function will try to eastablish connection to the server while also 
 //giving the homePath for later file fetching while making sure there is 
 //only one active ssh session to transfer files over
@@ -34,9 +33,9 @@ function connectSftp() {
         homePath: homePath
         });
 
-    if (connectionPromise) {
+    if (connectionPromise) 
         return connectionPromise;
-    }
+    
     
     newClient.on("ready", () => {
         console.log("ssh is ready to connect")
@@ -81,7 +80,55 @@ function connectSftp() {
         client.connect(ServAdr);
     });        
     return connectionPromise;
+
 }
+ipcMain.handle("connect-server", connectSftp);
+
+ipcMain.handle("list-directory", async (_event, remotePath) => {
+    if (!sftp) 
+        throw new Error("need to connect to the server first(sftp isn't established)");
+    return new Promise((resolve, reject) => {
+        sftp.readdir(remotePath, (error, list) => {
+            if (error) {
+                reject(error);
+                return;
+            }
+            let cleanedList = list.filter(file => {
+            file.filename !== "." && file.filename !== ".."
+            });
+
+            cleanedList = cleanedList.map(file => ({
+// these would help me later on in the listing order            
+                filename: file.filename,
+                type: file.attrs.isdirectory() ? "directory" : "file",
+                size: file.attrs.size,
+                modifiedAt: file.attrs.mtime * 1000
+            }))
+
+            cleanedList.sort((a, b) => {
+            if (first.type !== second.type) 
+                return first.type === "directory" ? -1 : 1;
+           
+            else if (first.name !== second.name) 
+                return first.name.localeCompare(second.name);
+
+            else 
+                return first.modifiedAt - second.modifiedAt;
+            });
+        resolve(cleanedList);
+        });
+    });
+})
+
+
+
+
+
+
+
+
+
+
 
 ipcMain.on("connect-server", (event) => {
     if (sshProcess) return;
