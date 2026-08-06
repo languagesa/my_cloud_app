@@ -8,7 +8,12 @@ contextBridge.exposeInMainWorld("server", {
     listDirectory: (remotePath) => {
         return ipcRenderer.invoke("list-directory", remotePath);
     },
-
+    openFileExplorer: () => {
+        return ipcRenderer.invoke("open-file-explorer");
+    },
+    openFolder: (nextpath) => {
+        return ipcRenderer.invoke("open-folder", nextpath);
+    },
     onStatus: (callback) => {
         console.log("onStatus listener registered");
         ipcRenderer.on("connection-status", (_event, connected) => {

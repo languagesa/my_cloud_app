@@ -10,7 +10,7 @@ let sshClient = null;
 let sftp = null;
 let homePath = null;
 let connectionPromise = null;
-
+let currentPath = null;
 const ServAdr = {
     host: "100.98.153.79", 
     port: "22", 
@@ -95,6 +95,7 @@ ipcMain.handle("connect-server", () => {
 
 });
 
+
 ipcMain.handle("list-directory", async (_event, remotePath) => {
     if (!sftp) 
         throw new Error("need to connect to the server first(sftp isn't established)");
@@ -110,7 +111,7 @@ ipcMain.handle("list-directory", async (_event, remotePath) => {
             });
 
                 cleanedList = cleanedList.map(file => ({
-                    filename: file.filename,
+                    name: file.filename,
                     type: file.attrs.isDirectory() ? "directory" : "file",
                     size: file.attrs.size,
                     modifiedAt: file.attrs.mtime * 1000
@@ -131,13 +132,31 @@ ipcMain.handle("list-directory", async (_event, remotePath) => {
         });
     });
 })
+ipcMain.handle("open-folder", async (_event, currentPath) => {
+    if (!sftp) {
+        throw new Error("Connect to the server before opening the file.");
+    }
+
+});
+ipcMain.handle("open-file-explorer", () => {
+    if (!sftp) {
+        throw new Error("Connect to the server before opening the file explorer.");
+    }
+
+    createFileExplorerWindow();
+
+    return {
+        opened: true
+    };
+});
+
 
 let mainWindow = null;
-
-function createWindow() {
+let fileExplorerWindow = null;
+function createWindow(width , height) {
     mainWindow = new BrowserWindow({
-        width: 900,
-        height: 600,
+        width: width,
+        height: height,
 
         webPreferences: {
             preload: path.join(__dirname, "preload.js"),
@@ -150,10 +169,37 @@ function createWindow() {
 
     mainWindow.on("closed", () => {
         mainWindow = null;
+        if (fileExplorerWindow && !fileExplorerWindow.isDestroyed()) {
+            fileExplorerWindow.close();
+        }    
     });
 }
+function createFileExplorerWindow() {
+      if (fileExplorerWindow && !fileExplorerWindow.isDestroyed()) {
+        fileExplorerWindow.focus();
+        return;
+      }
+    fileExplorerWindow = new BrowserWindow({
+        width: 800,
+        height: 600,
+        webPreferences: {
+            preload: path.join(__dirname, "preload.js"),
+            contextIsolation: true,
+            nodeIntegration: false
+        }
+});
 
-app.whenReady().then(createWindow);
+    fileExplorerWindow.loadFile(path.join(__dirname, "src/renderer/fileExplorer.html"));
+
+    fileExplorerWindow.on("closed", () => {
+        fileExplorerWindow = null;
+    });
+
+  
+    
+}
+
+app.whenReady().then(() => createWindow(1300, 900));
 
 app.on("before-quit", () => {
     if (sshClient) {

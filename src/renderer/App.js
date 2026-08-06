@@ -34,13 +34,14 @@ connectButton.onclick = async () => {
     }
 };
 fileExplorerButton.onclick = async () => {
+    
     try {
+        await window.server.openFileExplorer();
         const entries = await window.server.listDirectory(currentPath);
-
         console.log("Fetched directory:", entries);
         console.table(entries);
     } catch (error) {
-        console.error("Could not list directory:", error);
+        console.error("opening window or listing directory failed:", error);
     }
 };
 window.server.onStatus((connected) => {
