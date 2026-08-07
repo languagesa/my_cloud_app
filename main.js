@@ -1,4 +1,4 @@
-const { app, BrowserWindow , ipcMain} = require("electron");
+const { app, BrowserWindow , ipcMain, dialog} = require("electron");
 const { spawn } = require("child_process");
 const { Client } = require("ssh2");
 const path = require("path");
