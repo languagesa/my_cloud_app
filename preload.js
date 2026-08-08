@@ -14,6 +14,10 @@ contextBridge.exposeInMainWorld("server", {
     openFolder: (nextpath) => {
         return ipcRenderer.invoke("open-folder", nextpath);
     },
+    uploadFiles: (remotePath) => {
+        return ipcRenderer.invoke("upload-files", remotePath);
+    },
+
     onStatus: (callback) => {
         console.log("onStatus listener registered");
         ipcRenderer.on("connection-status", (_event, connected) => {

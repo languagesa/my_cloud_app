@@ -92,9 +92,7 @@ function connectSftp() {
 
 ipcMain.handle("connect-server", () => {
     return connectSftp();
-
 });
-
 
 ipcMain.handle("list-directory", async (_event, remotePath) => {
     if (!sftp) 
@@ -131,24 +129,46 @@ ipcMain.handle("list-directory", async (_event, remotePath) => {
         resolve(cleanedList);
         });
     });
-})
-ipcMain.handle("open-folder", async (_event, currentPath) => {
-    if (!sftp) {
-        throw new Error("Connect to the server before opening the file.");
-    }
-
 });
+
 ipcMain.handle("open-file-explorer", () => {
     if (!sftp) {
         throw new Error("Connect to the server before opening the file explorer.");
     }
-
     createFileExplorerWindow();
-
     return {
         opened: true
     };
 });
+
+ipcMain.handle("upload-files", async (_event, remotePath) => {
+    if (!sftp) {
+        throw new Error("need to connect to the server first(sftp isn't established");
+    }
+    const result = await dialog.showOpenDialog(fileExplorerWindow, {
+        title: "Choose files to upload",
+        properties: ["openFile", "multiSelections"]
+    });
+    if (result.canceled) return [];
+    
+
+    for (const filePath of result.filePaths) {
+        const filename = path.basename(filePath);
+        const destinationPath = path.posix.join(remotePath, filename);
+
+        await new Promise((resolve, reject) => {
+            sftp.fastPut(filePath, destinationPath, (error) => {
+                if (error) {
+                    reject(error);
+                    return;
+                }
+                resolve();
+            });
+        });
+    }
+    return {uploaded: result.filePaths.length};
+});
+
 
 
 let mainWindow = null;

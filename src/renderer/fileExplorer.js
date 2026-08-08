@@ -10,7 +10,9 @@ function joinRemotePath(parentPath, itemName) {
     }
 
     return `${parentPath}/${itemName}`;
-}
+};
+
+
 
 async function showDirectory(remotePath) {
     currentPath = remotePath;
@@ -47,6 +49,23 @@ async function showDirectory(remotePath) {
         fileList.textContent = "Could not load this directory.";
     }
 }
+
+uploadButton.onclick = async () => {
+    console.log("button clicked");
+    console.log(`typeof(currentPath), ${currentPath}`);
+    try {
+        console.log("i'll try to uload files now")
+        const result = await window.server.uploadFiles(currentPath);
+        console.log(`Uploaded ${result.uploaded} files to ${currentPath}`);
+
+        await showDirectory(currentPath)
+    }
+        catch (error) {
+            console.error("Error uploading files:", error);
+    }
+}
+
+
 
 backButton.onclick = () => {
     if (currentPath === "/") {
