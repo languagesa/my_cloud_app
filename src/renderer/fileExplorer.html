@@ -4,14 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>File Explorer</title>
+    <link rel="stylesheet" href="style.css">
+
 </head>
 <body>
     <button id="backButton">← Back</button>
     <button id="uploadButton">Upload Files</button>
+    
     <h2 id="pathDisplay">Loading...</h2>
-
+    
     <div id="fileList"></div>
-
+    <div id="contextMenu" class="context-menu">
+        <button id="downloadOption">Download</button>
+        <button id="renameOption">Rename</button>
+        <button id="deleteOption">Move to recycle bin</button>
+    </div>
     <script src="fileExplorer.js"></script>
 </body>
 </html>

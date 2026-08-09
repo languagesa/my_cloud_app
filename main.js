@@ -23,9 +23,7 @@ function sendConnectionStatus(connected) {
     if (mainWindow) 
         mainWindow.webContents.send("connection-status", connected);
     }
-// this function will try to eastablish connection to the server while also 
-//giving the homePath for later file fetching while making sure there is 
-//only one active ssh session to transfer files over
+
 function connectSftp() {
 
     if(sftp)
@@ -90,11 +88,7 @@ function connectSftp() {
     return connectionPromise;
 }
 
-ipcMain.handle("connect-server", () => {
-    return connectSftp();
-});
-
-ipcMain.handle("list-directory", async (_event, remotePath) => {
+function listDirectory(remotePath){
     if (!sftp) 
         throw new Error("need to connect to the server first(sftp isn't established)");
     
@@ -129,19 +123,20 @@ ipcMain.handle("list-directory", async (_event, remotePath) => {
         resolve(cleanedList);
         });
     });
-});
+}
 
-ipcMain.handle("open-file-explorer", () => {
-    if (!sftp) {
-        throw new Error("Connect to the server before opening the file explorer.");
+function rightClickMenu(){
+
+    
+}
+async function moveToRecycleBin(remotePath){
+    if(!sftp){
+        throw new Error("need to connect to the server first(sftp isn't established");
     }
-    createFileExplorerWindow();
-    return {
-        opened: true
-    };
-});
 
-ipcMain.handle("upload-files", async (_event, remotePath) => {
+}
+
+async function uploadFiles(remotePath){
     if (!sftp) {
         throw new Error("need to connect to the server first(sftp isn't established");
     }
@@ -167,6 +162,28 @@ ipcMain.handle("upload-files", async (_event, remotePath) => {
         });
     }
     return {uploaded: result.filePaths.length};
+}
+
+ipcMain.handle("connect-server", () => {
+    return connectSftp();
+});
+
+ipcMain.handle("list-directory", async (_event, remotePath) => {
+    return listDirectory(remotePath);
+});
+
+ipcMain.handle("open-file-explorer", () => {
+    if (!sftp) {
+        throw new Error("Connect to the server before opening the file explorer.");
+    }
+    createFileExplorerWindow();
+    return {
+        opened: true
+    };
+});
+
+ipcMain.handle("upload-files", async (_event, remotePath) => {
+    return uploadFiles(remotePath);
 });
 
 

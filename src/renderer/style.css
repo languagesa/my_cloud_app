@@ -22,3 +22,27 @@
 #statusText{
     font-size:18px;
 }
+.context-menu {
+    display: none;
+    position: fixed;
+    min-width: 180px;
+    padding: 5px;
+    background-color: white;
+    border: 1px solid #aaa;
+    border-radius: 6px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.25);
+    z-index: 1000;
+}
+
+.context-menu button {
+    display: block;
+    width: 100%;
+    padding: 8px 12px;
+    border: none;
+    background: none;
+    text-align: left;
+}
+
+.context-menu button:hover {
+    background-color: #e8e8e8;
+}

@@ -2,7 +2,10 @@ const fileList = document.getElementById("fileList");
 const pathDisplay = document.getElementById("pathDisplay");
 const currentFolder = document.getElementById("currentFolder");
 const backButton = document.getElementById("backButton");
+const contextMenu = document.getElementById("contextMenu");
+
 let currentPath = null;
+let selectedEntry = null;
 
 function joinRemotePath(parentPath, itemName) {
     if (parentPath === "/") {
@@ -11,8 +14,6 @@ function joinRemotePath(parentPath, itemName) {
 
     return `${parentPath}/${itemName}`;
 };
-
-
 
 async function showDirectory(remotePath) {
     currentPath = remotePath;
@@ -30,7 +31,13 @@ async function showDirectory(remotePath) {
 
             //thank you chatgpt for great emojis will replace with assets later probably
             itemButton.textContent = file.type === "directory" ? `📁 ${file.name}` : `📄 ${file.name}`;
+            
             itemButton.classList.add("file-item");
+            
+            itemButton.addEventListener("contextmenu", (event) => {
+                event.preventDefault();
+                openContextMenu(event.clientX, event.clientY, file);
+            });
 
             itemButton.onclick = () => {
                 if (file.type === "directory") {
@@ -48,6 +55,38 @@ async function showDirectory(remotePath) {
         console.error("Could not load directory:", error);
         fileList.textContent = "Could not load this directory.";
     }
+}
+
+
+
+function openContextMenu(mouseX, mouseY, entry) {
+    selectedEntry = entry;
+
+    contextMenu.style.display = "block";
+    const menuWidth = contextMenu.offsetWidth;
+    const menuHeight = contextMenu.offsetHeight;
+
+    let x = mouseX;
+    let y = mouseY;
+
+    if (x + menuWidth > window.innerWidth) {
+        x = window.innerWidth - menuWidth;
+    }
+
+    if (y + contextMenu.offsetHeight > window.innerHeight) {
+        y = event.clientY - contextMenu.offsetHeight;
+    }
+    contextMenu.style.left = `${x}px`;
+    contextMenu.style.top = `${y}px`;
+
+    document.addEventListener("click", () => {
+        closeContextMenu();
+    });
+}
+
+function closeContextMenu() {
+    contextMenu.style.display = "none";
+    selectedEntry = null;
 }
 
 uploadButton.onclick = async () => {
@@ -79,4 +118,7 @@ backButton.onclick = () => {
 
     showDirectory(parentPath);
 };
+
+
+
 showDirectory("/"); // Start at the root directory
