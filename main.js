@@ -106,6 +106,7 @@ function listDirectory(remotePath){
                     name: file.filename,
                     type: file.attrs.isDirectory() ? "directory" : "file",
                     size: file.attrs.size,
+                    path: path.join(remotePath,file.filename),
                     modifiedAt: file.attrs.mtime * 1000
                     }
             ));
@@ -125,10 +126,7 @@ function listDirectory(remotePath){
     });
 }
 
-function rightClickMenu(){
 
-    
-}
 async function moveToRecycleBin(remotePath){
     if(!sftp){
         throw new Error("need to connect to the server first(sftp isn't established");
@@ -162,6 +160,21 @@ async function uploadFiles(remotePath){
         });
     }
     return {uploaded: result.filePaths.length};
+}
+
+async function download(remotePath,entry){
+    if (!sftp) {
+        throw new Error("need to connect to the server first(sftp isn't established");
+    }    
+    if(entry.type === "directory")
+        for (file in entry){
+            const filename = path.basename(file);
+            const destinationPath = path.posix.join(remotePath, filename);
+            if(file.type==="directory"){
+                download()
+            }
+            sftp.fastGet()
+        }
 }
 
 ipcMain.handle("connect-server", () => {
