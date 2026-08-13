@@ -77,7 +77,6 @@ function openRenameInput(file,clickedButton) {
     renameInput.placeholder = file.name;
     renameScreen.classList.remove("hidden");
     renameInput.focus();
-
     renameScreen.onclick = async (event) => {
         if (event.target !== renameScreen) {
             return;
@@ -101,9 +100,15 @@ function openRenameInput(file,clickedButton) {
 
 function openContextMenu(mouseX, mouseY, entry) {
     const buttonContextMenu =document.querySelectorAll(".buttonContextMenu");
-
+    const clickedButton = event.target.closest(".file-item");
     const pageContextMenu =document.querySelectorAll(".pageContextMenu");
 
+    contextMenu.style.display = "block";
+    contextMenu.style.left = `${mouseX}px`;
+    contextMenu.style.top = `${mouseY}px`;
+    document.addEventListener("click", () => {
+        closeContextMenu();
+    });
     if (entry === null) {
         pageContextMenu.forEach((button) => {button.classList.remove("hidden")});
         buttonContextMenu.forEach((button) => {button.classList.add("hidden")});
@@ -134,17 +139,12 @@ function openContextMenu(mouseX, mouseY, entry) {
         renameOption.addEventListener("click", () => {
             closeContextMenu()
             openRenameInput(entry,clickedButton);
+
         });
 
     }
     
 
-    contextMenu.style.display = "block";
-    contextMenu.style.left = `${mouseX}px`;
-    contextMenu.style.top = `${mouseY}px`;
-    document.addEventListener("click", () => {
-        closeContextMenu();
-    });
 }
 
 function closeContextMenu() {
