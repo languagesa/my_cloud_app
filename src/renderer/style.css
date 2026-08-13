@@ -46,3 +46,19 @@
 .context-menu button:hover {
     background-color: #e8e8e8;
 }
+.rename-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+}
+
+.rename-input {
+    position: absolute;
+    top: 40%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+.hidden {
+    display: none;
+}

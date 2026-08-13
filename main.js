@@ -18,8 +18,9 @@ const ServAdr = {
     privateKey: fs.readFileSync(path.join(os.homedir(), ".ssh", "id_ed25519")),
     keepAliveMsgIntrvl: 10000
 };
+const downloadsPath = app.getPath("downloads");   
+
 function sendConnectionStatus(connected) {
-    console.log("connectd");
     if (mainWindow) 
         mainWindow.webContents.send("connection-status", connected);
     }
@@ -87,7 +88,6 @@ function connectSftp() {
     });
     return connectionPromise;
 }
-
 function listDirectory(remotePath){
     if (!sftp) 
         throw new Error("need to connect to the server first(sftp isn't established)");
@@ -106,7 +106,7 @@ function listDirectory(remotePath){
                     name: file.filename,
                     type: file.attrs.isDirectory() ? "directory" : "file",
                     size: file.attrs.size,
-                    path: path.join(remotePath,file.filename),
+                    path: path.posix.join(remotePath,file.filename),
                     modifiedAt: file.attrs.mtime * 1000
                     }
             ));
@@ -125,15 +125,12 @@ function listDirectory(remotePath){
         });
     });
 }
-
-
 async function moveToRecycleBin(remotePath){
     if(!sftp){
         throw new Error("need to connect to the server first(sftp isn't established");
     }
 
 }
-
 async function uploadFiles(remotePath){
     if (!sftp) {
         throw new Error("need to connect to the server first(sftp isn't established");
@@ -161,30 +158,54 @@ async function uploadFiles(remotePath){
     }
     return {uploaded: result.filePaths.length};
 }
-
-async function download(remotePath,entry){
+async function downloadWrap(file) {
     if (!sftp) {
         throw new Error("need to connect to the server first(sftp isn't established");
-    }    
-    if(entry.type === "directory")
-        for (file in entry){
-            const filename = path.basename(file);
-            const destinationPath = path.posix.join(remotePath, filename);
-            if(file.type==="directory"){
-                download()
-            }
-            sftp.fastGet()
-        }
-}
+    } 
+    await download(file,downloadsPath)
 
+}
+async function download(file,mkDirPath){
+    const LocalCurrentPath = path.join(mkDirPath,file.name)
+    if(file.type === "directory"){
+        const list = await listDirectory(file.path);
+        await fs.promises.mkdir(LocalCurrentPath, { recursive: true });
+        for (const entry of list){
+                await download(entry,LocalCurrentPath)           
+        }
+    }
+    else{
+        await new Promise((resolve, reject) => {
+            sftp.fastGet(file.path,LocalCurrentPath,{ concurrency: 1 },    error => {
+                if (error) {
+                    new Error(`Failed downloading "${file.path}" to ` +`"${LocalCurrentPath}": ${error.message} ` +`(SFTP code ${error.code})`)
+                    return;
+                }
+                resolve();
+            });
+        });
+    }   
+}
+async function renameEntry(oldPath,newName){
+    const parentPath = path.posix.dirname(oldPath);
+    const newPath = path.posix.join(parentPath, newName);
+
+    return new Promise((resolve, reject) => {
+        sftp.rename(oldPath, newPath, (error) => {
+            if (error) {
+                reject(error);
+                return;
+            }
+            resolve();
+        });
+    });
+}
 ipcMain.handle("connect-server", () => {
     return connectSftp();
 });
-
 ipcMain.handle("list-directory", async (_event, remotePath) => {
     return listDirectory(remotePath);
 });
-
 ipcMain.handle("open-file-explorer", () => {
     if (!sftp) {
         throw new Error("Connect to the server before opening the file explorer.");
@@ -194,9 +215,14 @@ ipcMain.handle("open-file-explorer", () => {
         opened: true
     };
 });
-
 ipcMain.handle("upload-files", async (_event, remotePath) => {
     return uploadFiles(remotePath);
+});
+ipcMain.handle("download-files",async(_event, file) =>{
+    return downloadWrap(file)
+});
+ipcMain.handle("rename-entry", async (_event, oldPath, newPath) => {
+    return renameEntry(oldPath, newPath);
 });
 
 
@@ -244,8 +270,6 @@ function createFileExplorerWindow() {
     fileExplorerWindow.on("closed", () => {
         fileExplorerWindow = null;
     });
-
-  
     
 }
 

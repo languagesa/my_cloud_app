@@ -3,7 +3,10 @@ const pathDisplay = document.getElementById("pathDisplay");
 const currentFolder = document.getElementById("currentFolder");
 const backButton = document.getElementById("backButton");
 const contextMenu = document.getElementById("contextMenu");
+const renameScreen = document.getElementById("renameScreen");
+const renameInput = document.getElementById("renameInput");
 
+let fileBeingRenamed = null;
 let currentPath = null;
 let selectedEntry = null;
 
@@ -36,7 +39,9 @@ async function showDirectory(remotePath) {
             
             itemButton.addEventListener("contextmenu", (event) => {
                 event.preventDefault();
-                openContextMenu(event.clientX, event.clientY, file);
+                event.stopPropagation();
+
+                openContextMenu(event.clientX,event.clientY,file );
             });
 
             itemButton.onclick = () => {
@@ -56,53 +61,111 @@ async function showDirectory(remotePath) {
         fileList.textContent = "Could not load this directory.";
     }
 }
+function openRenameInput(file,clickedButton) {
+    const renameScreen = document.getElementById("renameScreen");
+    const renameInput = document.getElementById("renameInput");
+    const buttonPosition = clickedButton.getBoundingClientRect();
 
+    renameInput.value = file.name;
+    renameInput.style.position = "fixed";
+    renameInput.style.left = `${buttonPosition.left}px`;
+    renameInput.style.top = `${buttonPosition.top}px`;
+    renameInput.style.width = `${buttonPosition.width}px`;
+    renameInput.style.height = `${buttonPosition.height}px`;
 
+    renameInput.value = "";
+    renameInput.placeholder = file.name;
+    renameScreen.classList.remove("hidden");
+    renameInput.focus();
+
+    renameScreen.onclick = async (event) => {
+        if (event.target !== renameScreen) {
+            return;
+        }
+
+        const newName = renameInput.value.trim();
+        renameScreen.classList.add("hidden");
+
+        if (newName === "") {
+            return;
+        }
+
+        try {
+            await window.server.renameEntry(file.path, newName);
+            await loadDirectory(currentPath);
+        } catch (error) {
+            console.error("Failed to rename:", error);
+        }
+    };
+}
 
 function openContextMenu(mouseX, mouseY, entry) {
-    selectedEntry = entry;
+    const buttonContextMenu =document.querySelectorAll(".buttonContextMenu");
+
+    const pageContextMenu =document.querySelectorAll(".pageContextMenu");
+
+    if (entry === null) {
+        pageContextMenu.forEach((button) => {
+            button.classList.remove("hidden");
+        });
+        uploadOption.onclick = async () => {
+            try {
+                const result = await window.server.uploadFiles(currentPath);
+                await showDirectory(currentPath)
+            }
+                catch (error) {
+                    console.error("Error uploading files:", error);
+            }
+        }
+
+        buttonContextMenu.forEach((button) => {
+            console.log(button)
+            button.classList.add("hidden");
+        });
+    } 
+    else {
+        pageContextMenu.forEach((button) => {
+            button.classList.add("hidden");
+        });
+
+        buttonContextMenu.forEach((button) => {
+            button.classList.remove("hidden");
+        });
+        selectedEntry = entry;
+        downloadOption.addEventListener("click", async () => {
+        if (!selectedEntry) return;
+        
+        try { 
+            const result = await window.server.downloadWrap(selectedEntry);
+            console.log("Downloaded successfully");
+        } 
+        catch (error) {
+            console.error("Download failed:", error);
+        }
+            closeContextMenu();
+        });
+        renameOption.addEventListener("click", () => {
+            closeContextMenu()
+            openRenameInput(entry,clickedButton);
+        });
+}
+    
 
     contextMenu.style.display = "block";
-    const menuWidth = contextMenu.offsetWidth;
-    const menuHeight = contextMenu.offsetHeight;
-
-    let x = mouseX;
-    let y = mouseY;
-
-    if (x + menuWidth > window.innerWidth) {
-        x = window.innerWidth - menuWidth;
-    }
-
-    if (y + contextMenu.offsetHeight > window.innerHeight) {
-        y = event.clientY - contextMenu.offsetHeight;
-    }
-    contextMenu.style.left = `${x}px`;
-    contextMenu.style.top = `${y}px`;
-
-    document.addEventListener("click", () => {
-        closeContextMenu();
-    });
+    contextMenu.style.left = `${mouseX}px`;
+    contextMenu.style.top = `${mouseY}px`;
 }
 
 function closeContextMenu() {
     contextMenu.style.display = "none";
     selectedEntry = null;
 }
+document.addEventListener("contextmenu",(event) => {
+    event.preventDefault();
+    openContextMenu(event.clientX,event.clientY,null);
+});
 
-uploadButton.onclick = async () => {
-    console.log("button clicked");
-    console.log(`typeof(currentPath), ${currentPath}`);
-    try {
-        console.log("i'll try to uload files now")
-        const result = await window.server.uploadFiles(currentPath);
-        console.log(`Uploaded ${result.uploaded} files to ${currentPath}`);
 
-        await showDirectory(currentPath)
-    }
-        catch (error) {
-            console.error("Error uploading files:", error);
-    }
-}
 
 
 

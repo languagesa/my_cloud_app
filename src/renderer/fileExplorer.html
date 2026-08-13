@@ -9,15 +9,28 @@
 </head>
 <body>
     <button id="backButton">← Back</button>
-    <button id="uploadButton">Upload Files</button>
     
     <h2 id="pathDisplay">Loading...</h2>
     
     <div id="fileList"></div>
-    <div id="contextMenu" class="context-menu">
-        <button id="downloadOption">Download</button>
-        <button id="renameOption">Rename</button>
-        <button id="deleteOption">Move to recycle bin</button>
+    <div id="contextMenu" class="context-menu hidden">
+        <div class="buttonContextMenu">
+            <button id="downloadOption">Download</button>
+            <button id="renameOption">Rename</button>
+            <button id="deleteOption">Move to recycle bin</button>
+        </div>
+        <div class="pageContextMenu hidden">
+            <button id="newFileOption">new file</button>
+            <button id="newFolderOption">new folder</button>
+            <button id="uploadOption">upload</button>
+        </div>
+    </div>
+
+
+
+    </div>
+    <div id="renameScreen" class="rename-screen hidden">
+        <input id="renameInput" class="rename-input" placeholder="Enter a new name">
     </div>
     <script src="fileExplorer.js"></script>
 </body>

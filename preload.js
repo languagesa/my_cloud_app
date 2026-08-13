@@ -17,6 +17,12 @@ contextBridge.exposeInMainWorld("server", {
     uploadFiles: (remotePath) => {
         return ipcRenderer.invoke("upload-files", remotePath);
     },
+    downloadWrap: (File) =>{
+        return ipcRenderer.invoke("download-files",File)
+    },
+    renameEntry: (oldPath, newName) => {
+    return ipcRenderer.invoke("rename-entry", oldPath, newName);
+    },
 
     onStatus: (callback) => {
         console.log("onStatus listener registered");
