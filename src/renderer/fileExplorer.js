@@ -105,41 +105,28 @@ function openContextMenu(mouseX, mouseY, entry) {
     const pageContextMenu =document.querySelectorAll(".pageContextMenu");
 
     if (entry === null) {
-        pageContextMenu.forEach((button) => {
-            button.classList.remove("hidden");
-        });
+        pageContextMenu.forEach((button) => {button.classList.remove("hidden")});
+        buttonContextMenu.forEach((button) => {button.classList.add("hidden")});
+
         uploadOption.onclick = async () => {
             try {
                 const result = await window.server.uploadFiles(currentPath);
                 await showDirectory(currentPath)
-            }
-                catch (error) {
+            } catch (error) {
                     console.error("Error uploading files:", error);
             }
         }
 
-        buttonContextMenu.forEach((button) => {
-            console.log(button)
-            button.classList.add("hidden");
-        });
     } 
     else {
-        pageContextMenu.forEach((button) => {
-            button.classList.add("hidden");
-        });
-
-        buttonContextMenu.forEach((button) => {
-            button.classList.remove("hidden");
-        });
+        pageContextMenu.forEach((button) => {button.classList.add("hidden")});
+        buttonContextMenu.forEach((button) => {button.classList.remove("hidden")});
         selectedEntry = entry;
-        downloadOption.addEventListener("click", async () => {
-        if (!selectedEntry) return;
-        
+        downloadOption.addEventListener("click", async () => {        
         try { 
             const result = await window.server.downloadWrap(selectedEntry);
             console.log("Downloaded successfully");
-        } 
-        catch (error) {
+        } catch (error) {
             console.error("Download failed:", error);
         }
             closeContextMenu();
@@ -148,12 +135,16 @@ function openContextMenu(mouseX, mouseY, entry) {
             closeContextMenu()
             openRenameInput(entry,clickedButton);
         });
-}
+
+    }
     
 
     contextMenu.style.display = "block";
     contextMenu.style.left = `${mouseX}px`;
     contextMenu.style.top = `${mouseY}px`;
+    document.addEventListener("click", () => {
+        closeContextMenu();
+    });
 }
 
 function closeContextMenu() {
