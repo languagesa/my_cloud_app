@@ -20,7 +20,6 @@
             <button id="deleteOption">Move to recycle bin</button>
         </div>
         <div class="pageContextMenu hidden">
-            <button id="newFileOption">new file</button>
             <button id="newFolderOption">new folder</button>
             <button id="uploadOption">upload</button>
         </div>
@@ -32,6 +31,27 @@
     <div id="renameScreen" class="rename-screen hidden">
         <input id="renameInput" class="rename-input" placeholder="Enter a new name">
     </div>
+    <dialog id="newFolderDialog">
+        <form id="newFolderForm">
+            <label for="newFolderInput">Folder name:</label>
+
+            <input
+                id="newFolderInput"
+                type="text"
+                maxlength="255"
+                autocomplete="off"
+                required
+            >
+
+            <button type="button" id="cancelFolderButton">
+                Cancel
+            </button>
+
+            <button type="submit" id="createFolderButton">
+                Create
+            </button>
+        </form>
+    </dialog>
     <script src="fileExplorer.js"></script>
 </body>
 </html>

@@ -21,7 +21,10 @@ contextBridge.exposeInMainWorld("server", {
         return ipcRenderer.invoke("download-files",File)
     },
     renameEntry: (oldPath, newName) => {
-    return ipcRenderer.invoke("rename-entry", oldPath, newName);
+        return ipcRenderer.invoke("rename-entry", oldPath, newName);
+    },
+    createFolder: (parentPath, folderName) => {
+        return ipcRenderer.invoke("create-folder", parentPath, folderName);
     },
 
     onStatus: (callback) => {

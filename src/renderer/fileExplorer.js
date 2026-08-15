@@ -5,6 +5,12 @@ const backButton = document.getElementById("backButton");
 const contextMenu = document.getElementById("contextMenu");
 const renameScreen = document.getElementById("renameScreen");
 const renameInput = document.getElementById("renameInput");
+const newFolderOption = document.getElementById("newFolderOption");
+const newFolderDialog =document.getElementById("newFolderDialog");
+const newFolderForm =document.getElementById("newFolderForm");
+const newFolderInput =document.getElementById("newFolderInput");
+const cancelFolderButton =document.getElementById("cancelFolderButton");
+const createFolderButton =document.getElementById("createFolderButton");
 
 let fileBeingRenamed = null;
 let currentPath = null;
@@ -112,7 +118,7 @@ function openContextMenu(mouseX, mouseY, entry) {
     if (entry === null) {
         pageContextMenu.forEach((button) => {button.classList.remove("hidden")});
         buttonContextMenu.forEach((button) => {button.classList.add("hidden")});
-
+        let isCreatingFolder = false;
         uploadOption.onclick = async () => {
             try {
                 const result = await window.server.uploadFiles(currentPath);
@@ -121,7 +127,61 @@ function openContextMenu(mouseX, mouseY, entry) {
                     console.error("Error uploading files:", error);
             }
         }
+        newFolderOption.addEventListener("click", async () => {
+            closeContextMenu()
+            newFolderInput.value = "";
+            newFolderDialog.showModal();
+            newFolderInput.focus();
+        });
+        newFolderForm.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            if(isCreatingFolder) 
+                return;
 
+            const folderName = newFolderInput.value.trim();
+
+            if (folderName === "") {
+                return;
+            }
+            isCreatingFolder = true;
+            createFolderButton.disabled = true;
+
+            try {
+                await window.server.createFolder(currentPath,folderName);
+                newFolderDialog.close();
+                await showDirectory(currentPath);
+
+            } catch (error) {
+                console.error("Failed to create folder:", error);
+                window.alert(error.message);
+                newFolderInput.focus();
+            } finally {
+                createFolderButton.disabled = false;
+            }
+});
+
+
+cancelFolderButton.addEventListener("click", () => {
+    newFolderDialog.close();
+});
+
+
+newFolderForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const folderName = newFolderInput.value.trim();
+            if (folderName === null || folderName.trim() === "") {
+                return;
+            }
+
+            try {
+                await window.server.createFolder(currentPath,folderName);
+                await showDirectory(currentPath);
+            } catch (error) {
+                console.error("Failed to create folder:", error);
+                window.alert(error.message);
+            }
+        });
     } 
     else {
         pageContextMenu.forEach((button) => {button.classList.add("hidden")});

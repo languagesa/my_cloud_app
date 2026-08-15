@@ -221,6 +221,35 @@ ipcMain.handle("upload-files", async (_event, remotePath) => {
 ipcMain.handle("download-files",async(_event, file) =>{
     return downloadWrap(file)
 });
+ipcMain.handle("create-folder", async (event, parentPath, folderName) => {
+    if (!sftp) {
+        throw new Error("SFTP is not connected.");
+    }
+
+    const cleanName = folderName.trim();
+
+    if (cleanName === "" ||cleanName === "." ||cleanName === ".." 
+        ||cleanName.includes("/") ||cleanName.includes("\0")) 
+        {
+        throw new Error("Invalid folder name.");
+    }
+    const folderPath = path.posix.join(parentPath, cleanName);
+    await new Promise((resolve, reject) => {
+        sftp.mkdir(folderPath, (error) => {
+            console.log("checking to see if it accidently runs twice")
+            if (error) {
+                reject(
+                    new Error(
+                        `Could not create "${cleanName}": ${JSON.stringify(error)}`
+                    )
+                );
+                return;
+            }
+            resolve();
+        });
+    });
+    return folderPath;
+});
 ipcMain.handle("rename-entry", async (_event, oldPath, newPath) => {
     return renameEntry(oldPath, newPath);
 });
