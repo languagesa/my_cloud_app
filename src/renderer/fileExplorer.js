@@ -133,76 +133,55 @@ function openContextMenu(mouseX, mouseY, entry) {
             newFolderDialog.showModal();
             newFolderInput.focus();
         });
+    
+
+        cancelFolderButton.addEventListener("click", () => {
+            newFolderDialog.close();
+        });
+
+
         newFolderForm.addEventListener("submit", async (event) => {
             event.preventDefault();
-            if(isCreatingFolder) 
-                return;
 
             const folderName = newFolderInput.value.trim();
+                if (folderName === null || folderName.trim() === "") {
+                    return;
+                }
 
-            if (folderName === "") {
-                return;
-            }
-            isCreatingFolder = true;
-            createFolderButton.disabled = true;
+                try {
+                    await window.server.createFolder(currentPath,folderName);
+                    await showDirectory(currentPath);
+                } catch (error) {
+                    console.error("Failed to create folder:", error);
+                    window.alert(error.message);
+                }
+                finally{
+                    createFolderButton.disabled = false;
+                    newFolderDialog.close();
 
-            try {
-                await window.server.createFolder(currentPath,folderName);
-                newFolderDialog.close();
-                await showDirectory(currentPath);
+                }
+            });
+        } 
+        else {
+                pageContextMenu.forEach((button) => {button.classList.add("hidden")});
+                buttonContextMenu.forEach((button) => {button.classList.remove("hidden")});
+                selectedEntry = entry;
+                downloadOption.addEventListener("click", async () => {        
+                try { 
+                    const result = await window.server.downloadWrap(selectedEntry);
+                    console.log("Downloaded successfully");
+                } catch (error) {
+                    console.error("Download failed:", error);
+                }
+                    closeContextMenu();
+                });
+                renameOption.addEventListener("click", () => {
+                    closeContextMenu()
+                    openRenameInput(entry,clickedButton);
 
-            } catch (error) {
-                console.error("Failed to create folder:", error);
-                window.alert(error.message);
-                newFolderInput.focus();
-            } finally {
-                createFolderButton.disabled = false;
-            }
-});
-
-
-cancelFolderButton.addEventListener("click", () => {
-    newFolderDialog.close();
-});
-
-
-newFolderForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    const folderName = newFolderInput.value.trim();
-            if (folderName === null || folderName.trim() === "") {
-                return;
-            }
-
-            try {
-                await window.server.createFolder(currentPath,folderName);
-                await showDirectory(currentPath);
-            } catch (error) {
-                console.error("Failed to create folder:", error);
-                window.alert(error.message);
-            }
         });
-    } 
-    else {
-        pageContextMenu.forEach((button) => {button.classList.add("hidden")});
-        buttonContextMenu.forEach((button) => {button.classList.remove("hidden")});
-        selectedEntry = entry;
-        downloadOption.addEventListener("click", async () => {        
-        try { 
-            const result = await window.server.downloadWrap(selectedEntry);
-            console.log("Downloaded successfully");
-        } catch (error) {
-            console.error("Download failed:", error);
+
         }
-            closeContextMenu();
-        });
-        renameOption.addEventListener("click", () => {
-            closeContextMenu()
-            openRenameInput(entry,clickedButton);
-
-        });
-
-    }
     
 
 }

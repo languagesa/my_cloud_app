@@ -239,9 +239,7 @@ ipcMain.handle("create-folder", async (event, parentPath, folderName) => {
             console.log("checking to see if it accidently runs twice")
             if (error) {
                 reject(
-                    new Error(
-                        `Could not create "${cleanName}": ${JSON.stringify(error)}`
-                    )
+                    new Error(`Could not create "${cleanName}": ${JSON.stringify(error)}`)
                 );
                 return;
             }
