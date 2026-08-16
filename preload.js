@@ -25,6 +25,16 @@ contextBridge.exposeInMainWorld("server", {
     },
     createFolder: (parentPath, folderName) => {
         return ipcRenderer.invoke("create-folder", parentPath, folderName);
+    },getRecycleBinPath: () => {
+    return ipcRenderer.invoke("get-recycle-bin-path");
+    },
+
+    moveToRecycleBin: (remotePath) => {
+        return ipcRenderer.invoke("move-to-recycle-bin",remotePath);
+    },
+
+    deletePermanently: (remotePath) => {
+        return ipcRenderer.invoke("delete-permanently",remotePath);
     },
 
     onStatus: (callback) => {

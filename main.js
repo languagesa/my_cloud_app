@@ -5,12 +5,17 @@ const path = require("path");
 const fs = require("fs");
 const os = require("os");
 
+
+
 let sshProcess = null;
 let sshClient = null;
 let sftp = null;
 let homePath = null;
 let connectionPromise = null;
 let currentPath = null;
+
+const downloadsPath = app.getPath("downloads");  
+const RECYCLE_BIN_PATH = "/home/yair_biran/.recycle_bin";
 const ServAdr = {
     host: "100.98.153.79", 
     port: "22", 
@@ -18,7 +23,6 @@ const ServAdr = {
     privateKey: fs.readFileSync(path.join(os.homedir(), ".ssh", "id_ed25519")),
     keepAliveMsgIntrvl: 10000
 };
-const downloadsPath = app.getPath("downloads");   
 
 function sendConnectionStatus(connected) {
     if (mainWindow) 
@@ -200,6 +204,126 @@ async function renameEntry(oldPath,newName){
         });
     });
 }
+
+function runSftp(method, ...argumentsList) {
+    return new Promise((resolve, reject) => {
+        sftp[method](...argumentsList, (error, result) => {
+            if (error) {
+                reject(error);
+                return;
+            }
+            resolve(result);
+        });
+    });
+}
+
+async function ensureRecycleBin() {
+    try {
+        const attributes = await runSftp("lstat",RECYCLE_BIN_PATH);
+        if (!attributes.isDirectory()) {
+            throw new Error(`${RECYCLE_BIN_PATH} exists but is not a directory`);
+        }
+    } catch (error) {
+        if (error.code !== 2) {
+            throw error;
+        }
+
+        await runSftp("mkdir", RECYCLE_BIN_PATH);
+    }
+}
+
+function isInsideRecycleBin(remotePath) {
+    const cleanPath = path.posix.normalize(remotePath);
+
+    return (cleanPath === RECYCLE_BIN_PATH || cleanPath.startsWith(`${RECYCLE_BIN_PATH}/`));
+}
+
+async function getRecycleDestination(sourcePath) {
+    const name = path.posix.basename(sourcePath);
+
+    let destinationPath = path.posix.join(RECYCLE_BIN_PATH,name);
+
+    try {
+        await runSftp("lstat", destinationPath);
+
+        destinationPath = path.posix.join(RECYCLE_BIN_PATH,`${Date.now()}-${name}`);
+    } catch (error) {
+        if (error.code !== 2) {
+            throw error;
+        }
+    }
+
+    return destinationPath;
+}
+
+async function moveToRecycleBin(remotePath) {
+    await ensureRecycleBin();
+
+    const sourcePath = path.posix.normalize(remotePath);
+
+    if (isInsideRecycleBin(sourcePath)) {
+        throw new Error("This entry is already in the recycle bin");
+    }
+
+    if (RECYCLE_BIN_PATH.startsWith(`${sourcePath}/`)) {
+        throw new Error(
+            "Cannot recycle a folder containing the recycle bin"
+        );
+    }
+
+    const destinationPath =
+        await getRecycleDestination(sourcePath);
+
+    await runSftp(
+        "rename",
+        sourcePath,
+        destinationPath
+    );
+
+    return destinationPath;
+}
+
+async function removeRemoteEntry(remotePath) {
+    const attributes = await runSftp("lstat", remotePath);
+
+    if (!attributes.isDirectory()) {
+        await runSftp("unlink", remotePath);
+        return;
+    }
+
+    const children = await runSftp("readdir", remotePath);
+
+    for (const child of children) {
+        if (child.filename === "." || child.filename === "..") {
+            continue;
+        }
+
+        const childPath = path.posix.join(
+            remotePath,
+            child.filename
+        );
+
+        await removeRemoteEntry(childPath);
+    }
+
+    await runSftp("rmdir", remotePath);
+}
+
+async function deletePermanently(remotePath) {
+    const targetPath = path.posix.normalize(remotePath);
+
+    if (targetPath === RECYCLE_BIN_PATH) {
+        throw new Error("The recycle bin itself cannot be deleted");
+    }
+
+    if (!isInsideRecycleBin(targetPath)) {
+        throw new Error(
+            "Permanent deletion is only allowed inside the recycle bin"
+        );
+    }
+
+    await removeRemoteEntry(targetPath);
+}
 ipcMain.handle("connect-server", () => {
     return connectSftp();
 });
@@ -251,6 +375,17 @@ ipcMain.handle("create-folder", async (event, parentPath, folderName) => {
 ipcMain.handle("rename-entry", async (_event, oldPath, newPath) => {
     return renameEntry(oldPath, newPath);
 });
+ipcMain.handle("get-recycle-bin-path", () => {
+    return RECYCLE_BIN_PATH;
+});
+
+ipcMain.handle("move-to-recycle-bin",async (event, remotePath) => {
+        return moveToRecycleBin(remotePath);
+    });
+
+ipcMain.handle("delete-permanently",async (event, remotePath) => {
+        return deletePermanently(remotePath);
+    });
 
 
 

@@ -11,6 +11,8 @@ const newFolderForm =document.getElementById("newFolderForm");
 const newFolderInput =document.getElementById("newFolderInput");
 const cancelFolderButton =document.getElementById("cancelFolderButton");
 const createFolderButton =document.getElementById("createFolderButton");
+const deleteOption =document.getElementById("deleteOption");
+const recycleBinPathPromise = window.server.getRecycleBinPath();
 
 let fileBeingRenamed = null;
 let currentPath = null;
@@ -104,7 +106,11 @@ function openRenameInput(file,clickedButton) {
     };
 }
 
-function openContextMenu(mouseX, mouseY, entry) {
+function isRecycleBinEntry(entryPath, recycleBinPath) {
+    return (entryPath === recycleBinPath ||entryPath.startsWith(`${recycleBinPath}/`));
+}
+
+async function openContextMenu(mouseX, mouseY, entry) {
     const buttonContextMenu =document.querySelectorAll(".buttonContextMenu");
     const clickedButton = event.target.closest(".file-item");
     const pageContextMenu =document.querySelectorAll(".pageContextMenu");
@@ -162,29 +168,79 @@ function openContextMenu(mouseX, mouseY, entry) {
                 }
             });
         } 
-        else {
-                pageContextMenu.forEach((button) => {button.classList.add("hidden")});
-                buttonContextMenu.forEach((button) => {button.classList.remove("hidden")});
-                selectedEntry = entry;
-                downloadOption.addEventListener("click", async () => {        
-                try { 
-                    const result = await window.server.downloadWrap(selectedEntry);
-                    console.log("Downloaded successfully");
-                } catch (error) {
-                    console.error("Download failed:", error);
-                }
-                    closeContextMenu();
-                });
-                renameOption.addEventListener("click", () => {
-                    closeContextMenu()
-                    openRenameInput(entry,clickedButton);
+    else {
+        pageContextMenu.forEach((button) => {button.classList.add("hidden")});
+        buttonContextMenu.forEach((button) => {button.classList.remove("hidden")});
+        selectedEntry = entry;
+        if (entry) {
+            const recycleBinPath = await recycleBinPathPromise;
 
-        });
-
+            deleteOption.classList.toggle("hidden",entry.path === recycleBinPath);
+            deleteOption.textContent = isRecycleBinEntry(entry.path,recycleBinPath)
+                ? "Delete permanently"
+                : "Move to recycle bin";
         }
-    
+        downloadOption.addEventListener("click", async () => {        
+            try { 
+                const result = await window.server.downloadWrap(selectedEntry);
+                console.log("Downloaded successfully");
+            } catch (error) {
+                console.error("Download failed:", error);
+            }
+                closeContextMenu();
+        });
+        renameOption.addEventListener("click", () => {
+            closeContextMenu()
+            openRenameInput(entry,clickedButton);
+        });
+deleteOption.onclick = async () => {
+    const entry = selectedEntry;
 
+    if (!entry) {
+        return;
+    }
+
+    contextMenu.classList.add("hidden");
+
+    try {
+        const recycleBinPath =
+            await recycleBinPathPromise;
+
+        if (
+            isRecycleBinEntry(
+                entry.path,
+                recycleBinPath
+            )
+        ) {
+            const confirmed = window.confirm(
+                `Permanently delete "${entry.name}"?`
+            );
+
+            if (!confirmed) {
+                return;
+            }
+
+            await window.server.deletePermanently(
+                entry.path
+            );
+        } else {
+            await window.server.moveToRecycleBin(
+                entry.path
+            );
+        }
+
+        selectedEntry = null;
+        await showDirectory(currentPath);
+    } catch (error) {
+        console.error(
+            "Delete operation failed:",
+            error
+        );
+    }
+};
+    }
 }
+
 
 function closeContextMenu() {
     contextMenu.style.display = "none";
